@@ -49,4 +49,5 @@ jobs:
             --platform managed \
             --allow-unauthenticated \
             --port 8080 \
+            --service-account backend-sa@${{ secrets.PROJECT_ID }}.iam.gserviceaccount.com \
             --set-env-vars PROJECT_ID=${{ secrets.PROJECT_ID }},REQUEST_TOPIC=${{ secrets.REQUEST_TOPIC }},PO_TOPIC=${{ secrets.PO_TOPIC }},INSPECTION_BUCKET=${{ secrets.INSPECTION_BUCKET }}
