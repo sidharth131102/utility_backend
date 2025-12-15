@@ -166,9 +166,13 @@ def update_work_order_status(wo_id: str, status: str) -> dict:
 
             # ✅ All 3 technicians finished inspection
             if completed == 3:
+                updates = {
+                    "status": "INSPECTION_COMPLETED",
+                    "updated_at": _now_ts(),
+                }
+
                 if replace_found:
-                    req_ref.update({
-                        "status": "INSPECTION_COMPLETED",
+                    updates.update({
                         "replacement_required": True,
                         "total_replacements": sum(
                             1 for wid in wo_ids
@@ -179,15 +183,15 @@ def update_work_order_status(wo_id: str, status: str) -> dict:
                             .get("status") == "REPLACE"
                         ),
                         "purchase_orders_created": 0,
-                        "updated_at": _now_ts(),
                     })
                 else:
-                    # ✅ ALL GOOD → COMPLETED
-                    req_ref.update({
-                        "status": "COMPLETED",
+                    updates.update({
                         "replacement_required": False,
-                        "updated_at": _now_ts(),
+                        "status": "COMPLETED",
                     })
+
+                req_ref.update(updates)
+
 
 
 
