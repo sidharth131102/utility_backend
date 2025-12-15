@@ -65,18 +65,26 @@ def api_inspect_work_order(wo_id):
 # ---------------------------------------------------------
 # 3. TECHNICIAN — Generate Signed URL for Upload
 # ---------------------------------------------------------
+import traceback
+
 @app.get("/api/upload-url")
 def api_signed_url():
-    request_id = request.args.get("requestId")
-    role = request.args.get("role")
-    remark = request.args.get("remark")
-    wo_id = request.args.get("woId")
+    try:
+        request_id = request.args.get("requestId")
+        role = request.args.get("role")
+        remark = request.args.get("remark")
+        wo_id = request.args.get("woId")
 
-    if not all([request_id, role, remark, wo_id]):
-        return jsonify({"error": "Missing parameters"}), 400
+        if not all([request_id, role, remark, wo_id]):
+            return jsonify({"error": "Missing parameters"}), 400
 
-    url = generate_signed_url(request_id, role, remark, wo_id)
-    return jsonify({"signed_url": url}), 200
+        url = generate_signed_url(request_id, role, remark, wo_id)
+        return jsonify({"signed_url": url}), 200
+
+    except Exception as e:
+        print("SIGNED URL ERROR:", e)
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
 
