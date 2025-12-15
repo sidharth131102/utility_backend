@@ -1,31 +1,14 @@
 from google.cloud import storage
 from google.auth import default
 from google.auth.transport.requests import Request
-from google.auth.iam import Signer
+from google.auth import impersonated_credentials
 import datetime
 import os
 
-# Env
 BUCKET = os.getenv("INSPECTION_BUCKET")
 
 VALID_ROLES = ["U", "P", "T"]
 VALID_REMARKS = ["good", "replace"]
-
-# Create storage client
-storage_client = storage.Client()
-
-# Get default credentials + service account email
-credentials, project = default()
-credentials.refresh(Request())
-
-service_account_email = credentials.service_account_email
-
-# IAM Signer (THIS is the key difference)
-signer = Signer(
-    Request(),
-    credentials,
-    service_account_email
-)
 
 def generate_signed_url(request_id, role, remark, wo_id):
     role = role.upper()
@@ -40,6 +23,19 @@ def generate_signed_url(request_id, role, remark, wo_id):
     folder = f"{role}-{remark}".upper()
     file_path = f"{request_id}/{folder}/{wo_id}.jpg"
 
+    # 🔐 Get default Cloud Run credentials
+    source_credentials, project = default()
+    source_credentials.refresh(Request())
+
+    # 🔐 Impersonate SAME service account (this gives signing ability)
+    target_credentials = impersonated_credentials.Credentials(
+        source_credentials=source_credentials,
+        target_principal=source_credentials.service_account_email,
+        target_scopes=["https://www.googleapis.com/auth/devstorage.read_write"],
+        lifetime=300,
+    )
+
+    storage_client = storage.Client(credentials=target_credentials)
     bucket = storage_client.bucket(BUCKET)
     blob = bucket.blob(file_path)
 
@@ -47,9 +43,6 @@ def generate_signed_url(request_id, role, remark, wo_id):
         version="v4",
         expiration=datetime.timedelta(minutes=15),
         method="PUT",
-        credentials=credentials,
-        service_account_email=service_account_email,
-        signer=signer,
         content_type="application/octet-stream"
     )
 
