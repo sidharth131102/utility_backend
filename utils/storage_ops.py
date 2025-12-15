@@ -42,8 +42,7 @@ def generate_signed_url(request_id, role, remark, wo_id):
     url = blob.generate_signed_url(
         version="v4",
         expiration=datetime.timedelta(minutes=15),
-        method="PUT",
-        content_type="application/octet-stream"
+        method="PUT"
     )
 
     return url
