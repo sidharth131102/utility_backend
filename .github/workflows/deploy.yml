@@ -9,28 +9,48 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ----------------------------------------
+      # 1. Checkout code
+      # ----------------------------------------
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # ----------------------------------------
+      # 2. Authenticate to Google Cloud
+      # ----------------------------------------
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
+      # ----------------------------------------
+      # 3. Configure Docker for Artifact Registry
+      # ----------------------------------------
       - name: Configure Docker
         run: |
           gcloud auth configure-docker asia-south1-docker.pkg.dev
 
+      # ----------------------------------------
+      # 4. Build & Push Docker Image
+      # ----------------------------------------
       - name: Build and Push Docker image
         run: |
-          docker build -t asia-south1-docker.pkg.dev/bigquerypractise-475707/backend/backend:latest .
-          docker push asia-south1-docker.pkg.dev/bigquerypractise-475707/backend/backend:latest
+          docker build -t asia-south1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/backend/backend:latest .
+          docker push asia-south1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/backend/backend:latest
 
+      # ----------------------------------------
+      # 5. Deploy to Cloud Run (WITH ENV VARS)
+      # ----------------------------------------
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy backend \
-            --image asia-south1-docker.pkg.dev/bigquerypractise-475707/backend/backend:latest \
+            --image asia-south1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/backend/backend:latest \
             --region asia-south1 \
             --platform managed \
             --allow-unauthenticated \
-            --port 8080
+            --port 8080 \
+            --set-env-vars \
+              PROJECT_ID=${{ secrets.PROJECT_ID }},\
+              REQUEST_TOPIC=${{ secrets.REQUEST_TOPIC }},\
+              PO_TOPIC=${{ secrets.PO_TOPIC }},\
+              INSPECTION_BUCKET=${{ secrets.INSPECTION_BUCKET }}
