@@ -1,19 +1,33 @@
 from google.cloud import storage
+from google.auth import default
+from google.auth.transport.requests import Request
+from google.auth.iam import Signer
 import datetime
 import os
 
-storage_client = storage.Client()
+# Env
 BUCKET = os.getenv("INSPECTION_BUCKET")
 
 VALID_ROLES = ["U", "P", "T"]
 VALID_REMARKS = ["good", "replace"]
 
-def generate_signed_url(request_id, role, remark, wo_id):
-    """
-    GCS Path:
-    <requestId>/<ROLE>-<REMARK>/<WO_ID>.jpg
-    """
+# Create storage client
+storage_client = storage.Client()
 
+# Get default credentials + service account email
+credentials, project = default()
+credentials.refresh(Request())
+
+service_account_email = credentials.service_account_email
+
+# IAM Signer (THIS is the key difference)
+signer = Signer(
+    Request(),
+    credentials,
+    service_account_email
+)
+
+def generate_signed_url(request_id, role, remark, wo_id):
     role = role.upper()
     remark = remark.lower()
 
@@ -32,7 +46,11 @@ def generate_signed_url(request_id, role, remark, wo_id):
     url = blob.generate_signed_url(
         version="v4",
         expiration=datetime.timedelta(minutes=15),
-        method="PUT"
+        method="PUT",
+        credentials=credentials,
+        service_account_email=service_account_email,
+        signer=signer,
+        content_type="application/octet-stream"
     )
 
     return url
