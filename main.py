@@ -88,7 +88,7 @@ def api_submit_work_order(wo_id):
     """
     Expected JSON:
     {
-      "remark": "GOOD" or "REPLACE"
+      "remark": "GOOD" or "REPLACE" 
     }
     """
     data = request.json
